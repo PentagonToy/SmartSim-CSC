@@ -52,6 +52,7 @@ echo
 echo "Installing bundled SmartRedis and SmartSim..."
 "${PYTHON}" -m pip install \
     --force-reinstall \
+    --no-deps \
     "${SMARTREDIS_DIR}" \
     "${SMARTSIM_DIR}"
 
