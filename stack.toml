@@ -1,0 +1,16 @@
+[stack]
+name = "SmartSim-CSC"
+version_file = "VERSION"
+
+[components.smartsim]
+path = "components/smartsim"
+
+[components.smartredis]
+path = "components/smartredis"
+
+[components.redisai]
+path = "components/redisai"
+
+[profiles.linux-x64-cpu]
+device = "cpu"
+backends = ["onnxruntime", "jax"]
