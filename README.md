@@ -91,6 +91,7 @@ backends = ["onnxruntime", "jax"]
 These profiles have been validated with:
 
 - Linux x86_64
+- Linux ARM64 / aarch64
 - Python 3.12
 - NumPy 2.x
 - Redis 7.2.4
