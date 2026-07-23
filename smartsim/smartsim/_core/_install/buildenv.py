@@ -168,7 +168,8 @@ class Versioner:
     # RedisAI
     REDISAI = "1.2.7"
     REDISAI_URL = get_env(
-        "SMARTSIM_REDISAI_URL", "https://github.com/PentagonToy/RedisAI.git"
+        "SMARTSIM_REDISAI_URL",
+        str(Path(__file__).resolve().parents[4] / "redisai"),
     )
     REDISAI_BRANCH = get_env(
         "SMARTSIM_REDISAI_BRANCH", "1.0.0-csc"
