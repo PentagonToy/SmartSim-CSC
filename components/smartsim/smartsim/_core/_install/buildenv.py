@@ -157,7 +157,7 @@ class Versioner:
     PYTHON_MIN = Version_("3.10.0")
 
     # Versions
-    SMARTSIM = Version_(get_env("SMARTSIM_VERSION", "1.0.3+csc"))
+    SMARTSIM = Version_(get_env("SMARTSIM_VERSION", "1.0.0+csc"))
     SMARTSIM_SUFFIX = get_env("SMARTSIM_SUFFIX", "")
 
     # Redis
