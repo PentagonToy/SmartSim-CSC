@@ -14,3 +14,7 @@ path = "components/redisai"
 [profiles.linux-x64-cpu]
 device = "cpu"
 backends = ["onnxruntime", "jax"]
+
+[profiles.linux-arm64-cpu]
+device = "cpu"
+backends = ["onnxruntime", "jax"]

@@ -82,9 +82,13 @@ Build profiles are defined in `stack.toml`.
 [profiles.linux-x64-cpu]
 device = "cpu"
 backends = ["onnxruntime", "jax"]
+
+[profiles.linux-arm64-cpu]
+device = "cpu"
+backends = ["onnxruntime", "jax"]
 ```
 
-This profile has been validated with:
+These profiles have been validated with:
 
 - Linux x86_64
 - Python 3.12
@@ -96,7 +100,7 @@ This profile has been validated with:
 - SmartSim tensor transfer
 - SmartSim ONNX backend validation
 
-Roihu ARM64 and GPU configurations require separate builds and will be added as independent profiles only after end-to-end validation.
+Roihu x86_64 CPU and ARM64 CPU configurations are validated. GPU execution still requires separate end-to-end validation on an allocated GPU node.
 
 ## Installation
 
@@ -273,12 +277,16 @@ The native library must be built separately for each target architecture.
 
 SmartSim supports Slurm, PBS, SGE, and local execution. CSC Roihu uses Slurm.
 
+The same SmartSim-CSC repository can be used from both x86_64 CPU nodes and ARM64 login or GPU nodes. The selected stack profile defines the requested device and backends, while SmartSim detects the host operating system and architecture at runtime and selects the corresponding machine-learning package configuration, such as `LinuxX64CPU.json` or `LinuxARM64CPU.json`.
+
+Separate repository clones are not required. However, architecture-specific Python environments, native libraries, RedisAI backends, and installation directories must remain separate.
+
 | Environment | Architecture |
 | --- | --- |
 | Roihu CPU nodes | x86_64 |
-| Roihu GPU nodes | ARM64 / aarch64 |
+| Roihu GPU login and compute nodes | ARM64 / aarch64 |
 
-Only the Linux x86_64 CPU profile is currently registered as validated in `stack.toml`.
+The Linux x86_64 CPU and Linux ARM64 CPU profiles are validated with the ONNX Runtime and JAX backends.
 
 ## Validation
 
