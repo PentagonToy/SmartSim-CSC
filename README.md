@@ -86,22 +86,27 @@ backends = ["onnxruntime", "jax"]
 [profiles.linux-arm64-cpu]
 device = "cpu"
 backends = ["onnxruntime", "jax"]
+
+[profiles.linux-arm64-gpu]
+device = "cuda-12"
+backends = ["onnxruntime", "jax"]
 ```
 
 These profiles have been validated with:
 
-- Linux x86_64
-- Linux ARM64 / aarch64
+- Linux x86_64 CPU
+- Linux ARM64 / aarch64 CPU
+- Linux ARM64 / aarch64 with NVIDIA GH200
 - Python 3.12
 - NumPy 2.x
 - Redis 7.2.4
 - RedisAI 1.2.7 CSC source
-- ONNX Runtime backend
-- JAX backend
+- ONNX Runtime CPU and CUDA backends
+- JAX CPU and CUDA runtimes
 - SmartSim tensor transfer
 - SmartSim ONNX backend validation
 
-Roihu x86_64 CPU and ARM64 CPU configurations are validated. GPU execution still requires separate end-to-end validation on an allocated GPU node.
+The ARM64 GPU profile was validated on a Roihu GH200 compute node with CUDA 12.9. Installation may be performed on an ARM64 GPU login node, but GPU runtime validation and GPU workloads require an allocated GPU compute node.
 
 ## Installation
 
@@ -133,7 +138,11 @@ The installer:
 6. builds the selected RedisAI backends
 7. checks Python package dependencies
 8. verifies required build artifacts
-9. runs `smart validate`
+9. runs CPU validation automatically, or GPU validation when an allocated GPU is visible
+
+For a GPU profile installed without an allocated GPU, the installer completes normally and prints the command that should later be run on a GPU compute node:
+
+    smart validate --device gpu
 
 A successful installation ends with:
 
@@ -253,7 +262,7 @@ Current limitations:
 - input tensors are currently expected to use `float32`
 - the current protocol supports one model input and one model output
 - scalar outputs may require explicit array shaping
-- GPU execution has not yet been fully validated
+- CUDA validation currently targets Linux ARM64 with NVIDIA GH200 and CUDA 12
 - the current JSON and socket protocol is an initial CSC implementation
 
 Model shape, dtype, and numerical results should be verified before production use.
@@ -278,7 +287,7 @@ The native library must be built separately for each target architecture.
 
 SmartSim supports Slurm, PBS, SGE, and local execution. CSC Roihu uses Slurm.
 
-The same SmartSim-CSC repository can be used from both x86_64 CPU nodes and ARM64 login or GPU nodes. The selected stack profile defines the requested device and backends, while SmartSim detects the host operating system and architecture at runtime and selects the corresponding machine-learning package configuration, such as `LinuxX64CPU.json` or `LinuxARM64CPU.json`.
+The same SmartSim-CSC repository can be used from both x86_64 CPU nodes and ARM64 login or GPU nodes. The selected stack profile defines the requested device and backends, while SmartSim detects the host operating system and architecture at runtime and selects the corresponding machine-learning package configuration, such as `LinuxX64CPU.json`, `LinuxARM64CPU.json`, or `LinuxARM64CUDA12.json`.
 
 Separate repository clones are not required. However, architecture-specific Python environments, native libraries, RedisAI backends, and installation directories must remain separate.
 
@@ -287,17 +296,22 @@ Separate repository clones are not required. However, architecture-specific Pyth
 | Roihu CPU nodes | x86_64 |
 | Roihu GPU login and compute nodes | ARM64 / aarch64 |
 
-The Linux x86_64 CPU and Linux ARM64 CPU profiles are validated with the ONNX Runtime and JAX backends.
+The Linux x86_64 CPU, Linux ARM64 CPU, and Linux ARM64 CUDA 12 profiles are validated with the ONNX Runtime and JAX backends.
 
 ## Validation
 
 ```bash
 python scripts/check_versions.py
 python scripts/stack_config.py --profile linux-x64-cpu
-smart validate
+smart validate --device cpu
 ```
 
-The current validated profile verifies tensor transfer and the ONNX backend. JAX applications should additionally be tested using an end-to-end model example.
+For the ARM64 GPU profile, request a GPU allocation, load CUDA, and run:
+
+    module load cuda/12.9.1
+    smart validate --device gpu
+
+Validation verifies tensor transfer and the ONNX backend. JAX applications should additionally be tested using an end-to-end model example.
 
 ## Build Safety
 
@@ -329,8 +343,7 @@ Values that should generally be centralized include stack versions, component pa
 
 Potential future additions include:
 
-- Linux ARM64 CPU profile
-- CUDA profiles
+- additional CUDA architectures and versions
 - ROCm profiles
 - additional Roihu platform validation
 - native SmartRedis build automation
