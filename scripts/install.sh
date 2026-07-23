@@ -25,7 +25,21 @@ do
     fi
 done
 
-echo "Component sources found:"
-echo "  SmartSim:   ${SMARTSIM_DIR}"
-echo "  SmartRedis: ${SMARTREDIS_DIR}"
-echo "  RedisAI:    ${REDISAI_DIR}"
+echo "Installing bundled SmartRedis and SmartSim..."
+"${PYTHON}" -m pip install \
+    --force-reinstall \
+    "${SMARTREDIS_DIR}" \
+    "${SMARTSIM_DIR}"
+
+echo
+echo "Installed packages:"
+"${PYTHON}" - <<'PY'
+from importlib.metadata import version
+
+for package in ("smartredis", "smartsim"):
+    print(f"  {package}: {version(package)}")
+PY
+
+echo
+echo "Bundled RedisAI source:"
+echo "  ${REDISAI_DIR}"
