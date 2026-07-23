@@ -188,7 +188,11 @@ def retrieve(
         if not source_path.exists():
             raise FileNotFoundError(f"Package path or file does not exist: {source}")
         if source_path.is_dir():
-            _from_local_directory(source, destination, **retrieve_kwargs)
+            local_kwargs = retrieve_kwargs.copy()
+            local_kwargs.pop("branch", None)
+            local_kwargs.pop("depth", None)
+            local_kwargs.setdefault("dirs_exist_ok", True)
+            _from_local_directory(source, destination, **local_kwargs)
         elif source_path.is_file() and source_path.suffix in (
             ".gz",
             ".zip",
