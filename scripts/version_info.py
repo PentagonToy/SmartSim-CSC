@@ -21,14 +21,23 @@ def stack_version() -> str:
 
 
 def smartsim_version() -> str:
-    version_file = component_path("smartsim") / "smartsim" / "version.py"
+    buildenv_file = (
+        component_path("smartsim")
+        / "smartsim"
+        / "_core"
+        / "_install"
+        / "buildenv.py"
+    )
     match = re.search(
-        r"__version__\s*=\s*['\"]([^'\"]+)['\"]",
-        version_file.read_text(),
+        r'SMARTSIM\s*=\s*Version_\(get_env\('
+        r'"SMARTSIM_VERSION",\s*"([^"]+)"\)\)',
+        buildenv_file.read_text(),
     )
 
     if match is None:
-        raise RuntimeError(f"Could not read SmartSim version from {version_file}")
+        raise RuntimeError(
+            f"Could not read SmartSim version from {buildenv_file}"
+        )
 
     return match.group(1)
 
