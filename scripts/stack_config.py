@@ -55,17 +55,40 @@ def profile(name: str) -> dict:
         raise KeyError(f"Unknown build profile: {name}") from exc
 
 
-def main() -> None:
+def shell_config(profile_name: str) -> None:
+    selected = profile(profile_name)
+    backends = selected["backends"]
+
+    print(f"STACK_NAME={stack_name()}")
+    print(f"STACK_VERSION={stack_version()}")
+    print(f"SMARTSIM_DIR={component_path('smartsim')}")
+    print(f"SMARTREDIS_DIR={component_path('smartredis')}")
+    print(f"REDISAI_DIR={component_path('redisai')}")
+    print(f"DEVICE={selected['device']}")
+    print(f"BACKENDS={','.join(backends)}")
+
+
+def main(profile_name: str) -> None:
     print(f"Stack: {stack_name()} {stack_version()}")
 
     for name in load_config()["components"]:
         print(f"{name:11} {component_path(name)}")
 
-    selected = profile("linux-x64-cpu")
-    print(f"Profile:      linux-x64-cpu")
+    selected = profile(profile_name)
+    print(f"Profile:      {profile_name}")
     print(f"Device:       {selected['device']}")
     print(f"Backends:     {', '.join(selected['backends'])}")
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--shell", action="store_true")
+    parser.add_argument("--profile", default="linux-x64-cpu")
+    args = parser.parse_args()
+
+    if args.shell:
+        shell_config(args.profile)
+    else:
+        main(args.profile)

@@ -4,29 +4,50 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-SMARTSIM_DIR="${ROOT_DIR}/components/smartsim"
-SMARTREDIS_DIR="${ROOT_DIR}/components/smartredis"
-REDISAI_DIR="${ROOT_DIR}/components/redisai"
-
 PYTHON="${PYTHON:-python3}"
+PROFILE="${PROFILE:-linux-x64-cpu}"
 SMART="${SMART:-$(dirname "${PYTHON}")/smart}"
 
-export SMARTSIM_REDISAI_URL="${REDISAI_DIR}"
-
-echo "SmartSim-CSC root: ${ROOT_DIR}"
-echo "Python:           $(${PYTHON} --version 2>&1)"
-echo
-
-for directory in \
-    "${SMARTSIM_DIR}" \
-    "${SMARTREDIS_DIR}" \
-    "${REDISAI_DIR}"
+while IFS='=' read -r key value
 do
-    if [[ ! -d "${directory}" ]]; then
-        echo "Missing component directory: ${directory}" >&2
+    case "${key}" in
+        STACK_NAME) STACK_NAME="${value}" ;;
+        STACK_VERSION) STACK_VERSION="${value}" ;;
+        SMARTSIM_DIR) SMARTSIM_DIR="${value}" ;;
+        SMARTREDIS_DIR) SMARTREDIS_DIR="${value}" ;;
+        REDISAI_DIR) REDISAI_DIR="${value}" ;;
+        DEVICE) DEVICE="${value}" ;;
+        BACKENDS) BACKENDS="${value}" ;;
+    esac
+done < <(
+    "${PYTHON}" "${ROOT_DIR}/scripts/stack_config.py" \
+        --shell \
+        --profile "${PROFILE}"
+)
+
+for variable in \
+    STACK_NAME \
+    STACK_VERSION \
+    SMARTSIM_DIR \
+    SMARTREDIS_DIR \
+    REDISAI_DIR \
+    DEVICE \
+    BACKENDS
+do
+    if [[ -z "${!variable:-}" ]]; then
+        echo "Missing stack configuration value: ${variable}" >&2
         exit 1
     fi
 done
+
+export SMARTSIM_REDISAI_URL="${REDISAI_DIR}"
+
+echo "${STACK_NAME} ${STACK_VERSION}"
+echo "Profile:          ${PROFILE}"
+echo "Python:           $(${PYTHON} --version 2>&1)"
+echo "Device:           ${DEVICE}"
+echo "Backends:         ${BACKENDS}"
+echo
 
 echo "Installing bundled SmartRedis and SmartSim..."
 "${PYTHON}" -m pip install \
@@ -34,11 +55,57 @@ echo "Installing bundled SmartRedis and SmartSim..."
     "${SMARTREDIS_DIR}" \
     "${SMARTSIM_DIR}"
 
-echo
-echo "Installing JAX runtime..."
-"${PYTHON}" -m pip install \
-    jax \
-    jaxlib
+IFS=',' read -ra BACKEND_LIST <<< "${BACKENDS}"
+
+for backend in "${BACKEND_LIST[@]}"
+do
+    case "${backend}" in
+        jax|onnxruntime|libtorch|libtensorflow) ;;
+        *)
+            echo "Unsupported backend in profile ${PROFILE}: ${backend}" >&2
+            exit 1
+            ;;
+    esac
+done
+
+BUILD_ARGS=(
+    build
+    --device "${DEVICE}"
+)
+
+has_backend() {
+    local target="$1"
+    local backend
+
+    for backend in "${BACKEND_LIST[@]}"
+    do
+        if [[ "${backend}" == "${target}" ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+if has_backend "jax"; then
+    echo
+    echo "Installing JAX runtime..."
+    "${PYTHON}" -m pip install jax jaxlib
+else
+    BUILD_ARGS+=(--skip-jax)
+fi
+
+if ! has_backend "onnxruntime"; then
+    BUILD_ARGS+=(--skip-onnx)
+fi
+
+if ! has_backend "libtorch"; then
+    BUILD_ARGS+=(--skip-torch)
+fi
+
+if ! has_backend "libtensorflow"; then
+    BUILD_ARGS+=(--skip-tensorflow)
+fi
 
 if [[ ! -x "${SMART}" ]]; then
     echo "SmartSim CLI was not found: ${SMART}" >&2
@@ -46,11 +113,8 @@ if [[ ! -x "${SMART}" ]]; then
 fi
 
 echo
-echo "Building Redis, RedisAI, ONNX Runtime, and JAX backends..."
-"${SMART}" build \
-    --device cpu \
-    --skip-torch \
-    --skip-tensorflow
+echo "Building SmartSim dependencies..."
+"${SMART}" "${BUILD_ARGS[@]}"
 
 echo
 echo "Checking installed Python packages..."
@@ -63,15 +127,13 @@ from pathlib import Path
 from smartsim._core.config import CONFIG
 from smartsim._core._install.buildenv import Versioner
 
-for package in ("numpy", "jax", "jaxlib", "smartredis", "smartsim"):
+for package in ("numpy", "smartredis", "smartsim"):
     print(f"  {package}: {version(package)}")
 
 redisai_source = Path(Versioner.REDISAI_URL).resolve()
 required_paths = (
     Path(CONFIG.database_exe),
     Path(CONFIG.lib_path) / "redisai.so",
-    Path(CONFIG.lib_path) / "backends" / "redisai_onnxruntime",
-    Path(CONFIG.lib_path) / "backends" / "redisai_jax",
 )
 
 print(f"\nBundled RedisAI source:\n  {redisai_source}")
@@ -90,4 +152,4 @@ echo "Validating SmartSim runtime..."
 "${SMART}" validate
 
 echo
-echo "SmartSim-CSC installation completed successfully."
+echo "${STACK_NAME} ${STACK_VERSION} installation completed successfully."
