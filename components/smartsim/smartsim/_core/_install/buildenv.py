@@ -169,7 +169,7 @@ class Versioner:
     REDISAI = "1.2.7"
     REDISAI_URL = get_env(
         "SMARTSIM_REDISAI_URL",
-        str(Path(__file__).resolve().parents[4] / "redisai"),
+        str(Path(__file__).resolve().parents[5] / "components" / "redisai"),
     )
     REDISAI_BRANCH = get_env(
         "SMARTSIM_REDISAI_BRANCH", "1.0.0-csc"
