@@ -90,7 +90,11 @@ has_backend() {
 if has_backend "jax"; then
     echo
     echo "Installing JAX runtime..."
-    "${PYTHON}" -m pip install jax jaxlib
+    if [[ "${DEVICE}" == "cuda-12" ]]; then
+        "${PYTHON}" -m pip install "jax[cuda12]"
+    else
+        "${PYTHON}" -m pip install jax jaxlib
+    fi
 else
     BUILD_ARGS+=(--skip-jax)
 fi

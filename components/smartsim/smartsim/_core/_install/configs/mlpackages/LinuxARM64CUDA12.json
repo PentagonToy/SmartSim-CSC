@@ -1,0 +1,84 @@
+{
+    "platform": {
+        "operating_system": "linux",
+        "architecture": "arm64",
+        "device": "cuda-12"
+    },
+    "ml_packages": [
+        {
+            "name": "dlpack",
+            "version": "v0.5_RAI",
+            "pip_index": "",
+            "python_packages": [],
+            "lib_source": "https://github.com/RedisAI/dlpack.git"
+        },
+        {
+            "name": "libtorch",
+            "version": "2.7.1",
+            "pip_index": "https://download.pytorch.org/whl/cpu",
+            "python_packages": [
+                "torch==2.7.1+cpu",
+                "torchvision==0.22.1+cpu",
+                "torchaudio==2.7.1+cpu"
+            ],
+            "lib_source": "https://github.com/PentagonToy/SmartSim-CSC/releases/download/v1.0.0/libtorch-linux-aarch64-2.7.1.tar.gz",
+            "rai_patches": [
+                {
+                    "description": "Patch RedisAI module to require C++17 standard instead of C++14",
+                    "source_file": "src/backends/libtorch_c/CMakeLists.txt",
+                    "regex": "set_property\\(TARGET\\storch_c\\sPROPERTY\\sCXX_STANDARD\\s(98|11|14)\\)",
+                    "replacement": "set_property(TARGET torch_c PROPERTY CXX_STANDARD 17)"
+                }
+            ]
+        },
+        {
+            "name": "libtensorflow",
+            "version": "2.18.1",
+            "pip_index": "",
+            "python_packages": [
+                "tensorflow"
+            ],
+            "lib_source": "https://github.com/PentagonToy/SmartSim-CSC/releases/download/v1.0.0/libtensorflow-linux-aarch64-2.18.1-flat.tar.gz",
+            "rai_patches": [
+                {
+                    "description": "Fix the type in a Tensorflow function signature",
+                    "source_file": "src/backends/tensorflow.c",
+                    "regex": "TF_Input inputs",
+                    "replacement": "TF_Output inputs"
+                },
+                {
+                    "description": "Fix the type in a Tensorflow function signature",
+                    "source_file": "src/backends/tensorflow.c",
+                    "regex": "TF_Input port",
+                    "replacement": "TF_Output port"
+                }
+            ]
+        },
+        {
+            "name": "onnxruntime",
+            "version": "1.26.0",
+            "pip_index": "",
+            "python_packages": [
+                "onnx==1.21.0",
+                "skl2onnx",
+                "scikit-learn",
+                "onnxmltools"
+            ],
+            "lib_source": "https://github.com/PentagonToy/SmartSim-CSC/releases/download/v1.0.0/onnxruntime-linux-aarch64-gpu-cuda12-1.26.0.tgz",
+            "rai_patches": [
+                {
+                    "description": "Patch ONNX allocator to require C++17 instead of C++14",
+                    "source_file": "src/backends/onnx_allocator/CMakeLists.txt",
+                    "regex": "set_property\\(TARGET\\sonnx_allocator\\sPROPERTY\\sCXX_STANDARD\\s(98|11|14)\\)",
+                    "replacement": "set_property(TARGET onnx_allocator PROPERTY CXX_STANDARD 17)"
+                },
+                {
+                    "description": "Disable forced use of RedisAI environment allocator in ONNX Runtime sessions",
+                    "source_file": "src/backends/onnxruntime.c",
+                    "regex": "\"session\\.use_env_allocators\",\\s*\"1\"",
+                    "replacement": "\"session.use_env_allocators\", \"0\""
+                }
+            ]
+        }
+    ]
+}

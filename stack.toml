@@ -18,3 +18,7 @@ backends = ["onnxruntime", "jax"]
 [profiles.linux-arm64-cpu]
 device = "cpu"
 backends = ["onnxruntime", "jax"]
+
+[profiles.linux-arm64-gpu]
+device = "cuda-12"
+backends = ["onnxruntime", "jax"]
