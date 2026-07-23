@@ -10,6 +10,8 @@ REDISAI_DIR="${ROOT_DIR}/components/redisai"
 
 PYTHON="${PYTHON:-python3}"
 
+export SMARTSIM_REDISAI_URL="${REDISAI_DIR}"
+
 echo "SmartSim-CSC root: ${ROOT_DIR}"
 echo "Python:           $(${PYTHON} --version 2>&1)"
 echo
@@ -42,4 +44,15 @@ PY
 
 echo
 echo "Bundled RedisAI source:"
-echo "  ${REDISAI_DIR}"
+"${PYTHON}" - <<'PY'
+from pathlib import Path
+
+from smartsim._core._install.buildenv import Versioner
+
+source = Path(Versioner.REDISAI_URL).resolve()
+
+print(f"  {source}")
+
+if not source.is_dir():
+    raise SystemExit(f"Bundled RedisAI source does not exist: {source}")
+PY
