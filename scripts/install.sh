@@ -152,8 +152,19 @@ for path in required_paths:
 PY
 
 echo
-echo "Validating SmartSim runtime..."
-"${SMART}" validate
+if [[ "${DEVICE}" == "cuda-12" ]]; then
+    if command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi -L >/dev/null 2>&1; then
+        echo "Validating SmartSim runtime on GPU..."
+        "${SMART}" validate --device gpu
+    else
+        echo "Skipping GPU runtime validation because no allocated GPU is visible."
+        echo "Run the following command on a GPU node:"
+        echo "  ${SMART} validate --device gpu"
+    fi
+else
+    echo "Validating SmartSim runtime on CPU..."
+    "${SMART}" validate --device cpu
+fi
 
 echo
 echo "${STACK_NAME} ${STACK_VERSION} installation completed successfully."
