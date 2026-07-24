@@ -7,7 +7,7 @@ EXE_INC = -std=c++17 -Wno-old-style-cast \
     -I$(LIB_SRC)/dynamicMesh/lnInclude \
     -I$(LIB_SRC)/conversion/lnInclude \
     -I$(LIB_SRC)/sampling/lnInclude \
-    -I../../smartredis/install/include
+    -I$(SMARTREDIS_INCLUDE)
 
 LIB_LIBS = \
     -lfiniteVolume \
@@ -18,7 +18,9 @@ LIB_LIBS = \
     -ldynamicMesh \
     -lconversion \
     -lsampling \
-    -L$(FOAM_USER_LIBBIN) \
-    -lhiredis  \
-    -lredis++  \
+    -L$(SMARTREDIS_LIB) \
+    -Wl,-rpath,$(SMARTREDIS_LIB) \
+    $(OPENFOAM_SMARTSIM_LDFLAGS) \
+    -lhiredis \
+    -lredis++ \
     -lsmartredis
