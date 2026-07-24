@@ -1,0 +1,2 @@
+# Preserve whitespace in imported OpenFOAM integration sources
+components/openfoam-smartsim/** whitespace=-trailing-space,-space-before-tab
