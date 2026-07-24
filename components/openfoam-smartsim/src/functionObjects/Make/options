@@ -1,11 +1,11 @@
-EXE_INC = --std=c++17 -Wno-old-style-cast \
+EXE_INC = -std=c++17 -Wno-old-style-cast \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/finiteArea/lnInclude \
     -I$(LIB_SRC)/fileFormats/lnInclude \
     -I$(LIB_SRC)/surfMesh/lnInclude \
     -I$(LIB_SRC)/meshTools/lnInclude \
     -I$(LIB_SRC)/sampling/lnInclude \
-    -I../../smartredis/install/include \
+    -I$(SMARTREDIS_INCLUDE) \
     -I../smartRedis/lnInclude
 
 LIB_LIBS = \
@@ -16,7 +16,10 @@ LIB_LIBS = \
     -lmeshTools \
     -lsampling \
     -L$(FOAM_USER_LIBBIN) \
-    -lhiredis  \
-    -lredis++  \
+    -L$(SMARTREDIS_LIB) \
+    -Wl,-rpath,$(SMARTREDIS_LIB) \
+    $(OPENFOAM_SMARTSIM_LDFLAGS) \
+    -lhiredis \
+    -lredis++ \
     -lsmartredis \
     -lsmartRedisClient
