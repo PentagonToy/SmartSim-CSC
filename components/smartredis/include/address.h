@@ -65,6 +65,11 @@ class SRAddress
     SRAddress(const SRAddress& other) = default;
 
     /*!
+    *   \brief Virtual destructor
+    */
+    virtual ~SRAddress() = default;
+
+    /*!
     *   \brief Comparison operator
     *   \param other The address to compare
     */

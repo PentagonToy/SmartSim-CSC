@@ -9,3 +9,7 @@ dist/
 .venv-test-gpu/
 build-assets/
 tmp*/
+
+# OpenFOAM build artefacts
+components/openfoam-smartsim/**/Make/linux*/
+components/openfoam-smartsim/**/lnInclude/
