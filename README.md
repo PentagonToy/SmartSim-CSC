@@ -1,6 +1,6 @@
 # SmartSim-CSC
 
-SmartSim-CSC is a CSC-oriented monorepo containing the SmartSim, SmartRedis, and RedisAI sources required for integrated simulation and machine-learning workflows on HPC systems.
+SmartSim-CSC is a CSC-oriented monorepo containing the SmartSim, SmartRedis, RedisAI, and OpenFOAM integration sources required for integrated simulation and machine-learning workflows on HPC systems.
 
 Maintained by:
 
@@ -13,6 +13,8 @@ Based on the upstream projects:
 - [SmartSim](https://github.com/CrayLabs/SmartSim)
 - [SmartRedis](https://github.com/CrayLabs/SmartRedis)
 - [RedisAI](https://github.com/RedisAI/RedisAI)
+
+The OpenFOAM integration is imported and maintained independently inside this repository. Its original licence and attribution notices are preserved under `components/openfoam-smartsim/`.
 
 ## Versions
 
@@ -40,7 +42,8 @@ SmartSim-CSC/
 ├── components/
 │   ├── smartsim/
 │   ├── smartredis/
-│   └── redisai/
+│   ├── redisai/
+│   └── openfoam-smartsim/
 ├── examples/
 │   ├── GettingStarted/
 │   ├── OnlineAnalysis/
@@ -50,13 +53,17 @@ SmartSim-CSC/
 │   ├── stack_config.py
 │   ├── version_info.py
 │   ├── check_versions.py
-│   └── audit_hardcoding.py
+│   ├── audit_hardcoding.py
+│   └── openfoam/
+│       └── build-openfoam-v2412.sh
+├── tests/
+│   └── openfoam/
 ├── stack.toml
 ├── VERSION
 └── README.md
 ```
 
-The three components are stored directly in this repository. Git submodules and the former separate CSC component repositories are not required.
+The components are stored directly in this repository. Git submodules and the former separate CSC component repositories are not required.
 
 ## Components
 
@@ -73,6 +80,21 @@ The CSC implementation additionally supports direct registration of supported JA
 ### RedisAI
 
 RedisAI extends Redis with machine-learning model execution. The bundled CSC source includes a JAX backend that communicates with a persistent Python worker.
+
+### OpenFOAM Integration
+
+The bundled OpenFOAM component connects OpenFOAM fields and applications to SmartRedis. It is maintained independently inside SmartSim-CSC and has no submodule, remote dependency, or automated upstream synchronisation.
+
+The current OpenFOAM.com v2412 build produces:
+
+```text
+libsmartRedisClient.so
+libsmartredisFunctionObjects.so
+libsmartSimMotionSolvers.so
+foamSmartSimSvd
+foamSmartSimSvdDBAPI
+svdToFoam
+```
 
 ## Current Validated Profile
 
@@ -105,6 +127,19 @@ These profiles have been validated with:
 - JAX CPU and CUDA runtimes
 - SmartSim tensor transfer
 - SmartSim ONNX backend validation
+
+The OpenFOAM integration has additionally been validated on Roihu x86_64 with:
+
+- OpenFOAM.com v2412
+- GCC 15.2.0
+- OpenMPI 5.0.10
+- SmartRedis native library built from `components/smartredis`
+- complete build and runtime linking of three libraries and three executables
+- `foamSmartSimSvd` pressure transfer with tensor shape `(400, 50)`
+- `foamSmartSimSvdDBAPI` transfer of 50 timestep datasets with pressure tensor shape `(400, 1)`
+- metadata dataset value `NTimes=50`
+
+The function-object and mesh-motion libraries currently have build and link validation. Their dedicated runtime tests remain pending.
 
 The ARM64 GPU profile was validated on a Roihu GH200 compute node with CUDA 12.9. Installation may be performed on an ARM64 GPU login node, but GPU runtime validation and GPU workloads require an allocated GPU compute node.
 
@@ -139,6 +174,8 @@ The installer:
 7. checks Python package dependencies
 8. verifies required build artifacts
 9. runs CPU validation automatically, or GPU validation when an allocated GPU is visible
+
+The OpenFOAM integration is built separately after the native SmartRedis library has been installed.
 
 For a GPU profile installed without an allocated GPU, the installer completes normally and prints the command that should later be run on a GPU compute node:
 
@@ -269,7 +306,7 @@ Model shape, dtype, and numerical results should be verified before production u
 
 ## Native SmartRedis Library
 
-The native SmartRedis library is required for C, C++, Fortran, and linked simulation applications.
+The native SmartRedis library is required for C, C++, Fortran, OpenFOAM, and other linked simulation applications.
 
 ```bash
 cd components/smartredis
@@ -282,6 +319,54 @@ env \
 ```
 
 The native library must be built separately for each target architecture.
+
+## OpenFOAM v2412 Build
+
+The OpenFOAM integration is currently validated on Roihu x86_64 only.
+
+Load the SmartSim environment first, then replace its compiler module with the OpenFOAM module stack:
+
+```bash
+module --force purge
+source /path/to/Python4SmartSim.sh
+
+module load gcc/15.2.0
+module load openmpi/5.0.10
+module load openfoam/2412
+```
+
+Do not source `Python4SmartSim.sh` again after loading OpenFOAM.
+
+Set the OpenFOAM user directory and build:
+
+```bash
+export FOAM_USER_DIR="/path/to/OpenFOAM/OpenFOAM-v2412"
+
+./scripts/openfoam/build-openfoam-v2412.sh
+```
+
+The script builds and verifies:
+
+```text
+$FOAM_USER_LIBBIN/libsmartRedisClient.so
+$FOAM_USER_LIBBIN/libsmartredisFunctionObjects.so
+$FOAM_USER_LIBBIN/libsmartSimMotionSolvers.so
+$FOAM_USER_APPBIN/foamSmartSimSvd
+$FOAM_USER_APPBIN/foamSmartSimSvdDBAPI
+$FOAM_USER_APPBIN/svdToFoam
+```
+
+Basic verification:
+
+```bash
+export PATH="$FOAM_USER_APPBIN:$PATH"
+
+foamSmartSimSvd -help | tail -4
+foamSmartSimSvdDBAPI -help | tail -4
+svdToFoam -help | tail -4
+```
+
+Runtime tests are stored under `tests/openfoam/`.
 
 ## HPC Usage
 
@@ -296,7 +381,7 @@ Separate repository clones are not required. However, architecture-specific Pyth
 | Roihu CPU nodes | x86_64 |
 | Roihu GPU login and compute nodes | ARM64 / aarch64 |
 
-The Linux x86_64 CPU, Linux ARM64 CPU, and Linux ARM64 CUDA 12 profiles are validated with the ONNX Runtime and JAX backends.
+The Linux x86_64 CPU, Linux ARM64 CPU, and Linux ARM64 CUDA 12 profiles are validated with the ONNX Runtime and JAX backends. The OpenFOAM v2412 integration is currently validated only on Roihu x86_64 CPU nodes.
 
 ## Validation
 
@@ -312,6 +397,14 @@ For the ARM64 GPU profile, request a GPU allocation, load CUDA, and run:
     smart validate --device gpu
 
 Validation verifies tensor transfer and the ONNX backend. JAX applications should additionally be tested using an end-to-end model example.
+
+OpenFOAM validation on x86_64:
+
+```bash
+python tests/openfoam/test_openfoam_smartsim.py
+```
+
+The DBAPI runtime has also been validated with 50 timestep datasets and metadata `NTimes=50`.
 
 ## Build Safety
 
@@ -347,7 +440,9 @@ Potential future additions include:
 - ROCm profiles
 - additional Roihu platform validation
 - native SmartRedis build automation
-- OpenFOAM integration
+- OpenFOAM ARM64 validation
+- OpenFOAM function-object runtime validation
+- OpenFOAM mesh-motion runtime validation
 - expanded JAX input and output support
 
 These should be introduced as independently validated profiles or components.
@@ -359,7 +454,7 @@ These should be introduced as independently validated profiles or components.
 - [SmartRedis API](https://www.craylabs.org/docs/api/smartredis_api.html)
 - [SmartSim tutorials](https://www.craylabs.org/docs/tutorials/getting_started/getting_started.html)
 
-Repository examples are available under `examples/`.
+Repository examples are available under `examples/`. OpenFOAM-specific notes are available under `components/openfoam-smartsim/`.
 
 ## Citation
 
@@ -382,4 +477,4 @@ DOI: [10.1016/j.jocs.2022.101707](https://doi.org/10.1016/j.jocs.2022.101707)
 
 ## License
 
-SmartSim-CSC retains the licenses and copyright terms of its upstream components. See the license files distributed with each component for the applicable terms.
+SmartSim-CSC retains the licences and copyright terms of its upstream components. See the licence files distributed with each component for the applicable terms. The OpenFOAM integration preserves its original licence and attribution notices under `components/openfoam-smartsim/`.
